@@ -1,16 +1,24 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { Dimensions, TextInput, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import axios from 'axios';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Box, Button, useToast, VStack, HStack, Text } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { useRoute, useNavigation } from '@react-navigation/native';
 
 const WeldUpload = () => {
+  const { user } = useContext(AuthContext);
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { pipe_id } = route.params;
+
+  const toast = useToast();
   const [formData, setFormData] = useState({
+    id_pipe: pipe_id,
     root1: '',
     root2: '',
     root3: '',
     root4: '',
-    welsingcol: '',
+    weldingcol: '',
     root_wp: '',
     root_batchno: '',
     filler1: '',
@@ -28,10 +36,21 @@ const WeldUpload = () => {
     wps_id: '',
   });
 
-  const { user } = useContext(AuthContext);
-  const route = useRoute();
-  const navigation = useNavigation();
-  const { pipe_id } = route.params;
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const { width, height } = Dimensions.get('window');
+      setIsLandscape(width > height);
+    };
+
+    const subscription = Dimensions.addEventListener('change', handleOrientationChange);
+    handleOrientationChange();
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   const handleInputChange = (name, value) => {
     setFormData({ ...formData, [name]: value });
@@ -42,34 +61,83 @@ const WeldUpload = () => {
     try {
       const response = await axios.post('http://192.168.102.101:3000/welding/add', data, {
         headers: {
-          Authorization: `Bearer ${user.token}`, // Assuming user.token contains the JWT token
+          Authorization: `Bearer ${user.token}`,
         },
       });
+
       if (response.status === 201) {
-        Alert.alert('Success', 'Welding data uploaded successfully');
+        toast.show({
+          title: 'Success',
+          status: 'success',
+          description: 'Welding data uploaded successfully',
+          placement: 'top',
+        });
         navigation.navigate('Home');
       } else {
-        Alert.alert('Error', 'Failed to upload welding data');
+        throw new Error('Server responded with an error');
       }
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'An error occurred while uploading welding data');
+      toast.show({
+        title: 'Error',
+        status: 'error',
+        description: 'An error occurred while uploading welding data',
+        placement: 'top',
+      });
     }
   };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate('Home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [navigation])
+  );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Weld Upload</Text>
-      {Object.keys(formData).map((key) => (
-        <TextInput
-          key={key}
-          style={styles.input}
-          placeholder={key}
-          value={formData[key]}
-          onChangeText={(value) => handleInputChange(key, value)}
-        />
-      ))}
-      <Button title="Submit" onPress={handleSubmit} />
+      {isLandscape ? (
+        <HStack space={4} flexWrap="wrap" justifyContent="center">
+          {Object.keys(formData).map((key) => (
+            <TextInput
+              key={key}
+              style={styles.input}
+              placeholder={key.replace('_', ' ')}
+              placeholderTextColor="#888"
+              value={formData[key]}
+              onChangeText={(value) => handleInputChange(key, value)}
+            />
+          ))}
+          <Button onPress={handleSubmit} colorScheme="blue" style={styles.button}>
+            Submit
+          </Button>
+        </HStack>
+      ) : (
+        <VStack space={4}>
+          {Object.keys(formData).map((key) => (
+            <TextInput
+              key={key}
+              style={styles.input}
+              placeholder={key.replace('_', ' ')}
+              placeholderTextColor="#888"
+              value={formData[key]}
+              onChangeText={(value) => handleInputChange(key, value)}
+            />
+          ))}
+          <Button onPress={handleSubmit} colorScheme="blue">
+            Submit
+          </Button>
+        </VStack>
+      )}
     </ScrollView>
   );
 };
@@ -77,9 +145,9 @@ const WeldUpload = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
+    backgroundColor: '#fff',
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 24,
@@ -93,6 +161,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingLeft: 8,
     borderRadius: 4,
+    color: '#000',
+    backgroundColor: '#fff',
+    flex: 1,
+    minWidth: '40%', // Adjust to fit multiple items in landscape mode
+  },
+  button: {
+    alignSelf: 'center',
+    marginTop: 10,
   },
 });
 

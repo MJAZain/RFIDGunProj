@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'react-native';
+import { VStack, Box, Text, Input, Button, Link, Center, ScrollView, useToast } from 'native-base';
 import axios from 'axios';
 
 const Register = ({ navigation }) => {
@@ -8,8 +9,19 @@ const Register = ({ navigation }) => {
   const [company, setCompany] = useState('');
   const [position, setPosition] = useState('');
   const [password, setPassword] = useState('');
+  const toast = useToast();
 
   const handleRegister = async () => {
+    if (!name || !email || !company || !position || !password) {
+      toast.show({
+        title: 'Registration failed',
+        status: 'error',
+        description: 'All fields are required.',
+        placement: 'top',
+      });
+      return;
+    }
+
     try {
       await axios.post('http://192.168.102.101:3000/auth/register', {
         name,
@@ -21,46 +33,107 @@ const Register = ({ navigation }) => {
       console.log('Registration successful');
       navigation.navigate('Login');
     } catch (error) {
-      console.error('Registration failed:', error.response ? error.response.data : error.message);
+      const errorMessage = error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : error.message;
+      console.error('Registration failed:', errorMessage);
+      toast.show({
+        title: 'Registration failed',
+        status: 'error',
+        description: errorMessage,
+        placement: 'top', // Add this line to place the toast at the top
+      });
     }
   };
 
+  const imageSource = require('../../public/userImage/Logo_PT_Rekayasa_Industri.jpg');
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.label}>Name</Text>
-      <TextInput style={styles.input} value={name} onChangeText={setName} />
-      <Text style={styles.label}>Email</Text>
-      <TextInput style={styles.input} value={email} onChangeText={setEmail} />
-      <Text style={styles.label}>Company</Text>
-      <TextInput style={styles.input} value={company} onChangeText={setCompany} />
-      <Text style={styles.label}>Position</Text>
-      <TextInput style={styles.input} value={position} onChangeText={setPosition} />
-      <Text style={styles.label}>Password</Text>
-      <TextInput style={styles.input} value={password} onChangeText={setPassword} secureTextEntry />
-      <Button title="Register" onPress={handleRegister} />
-      <Button title="Back to Login" onPress={() => navigation.navigate('Login')} />
-    </ScrollView>
+    <Center flex={1} bg="#fff">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }}>
+        <VStack space={4} width="100%" maxW="600px">
+          <Image
+            source={imageSource}
+            style={{ width: '100%', height: 100, marginBottom: 8 }}
+            resizeMode="contain"
+          />
+          <Box width="100%">
+            <Text fontSize="lg" fontWeight="bold">Name</Text>
+            <Input
+              value={name}
+              onChangeText={setName}
+              placeholder="Enter your name"
+              variant="outline"
+              mt={2}
+              mb={2}
+              width="100%"
+              isRequired // Make this field required
+            />
+          </Box>
+          <Box width="100%">
+            <Text fontSize="lg" fontWeight="bold">Email</Text>
+            <Input
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              variant="outline"
+              mt={2}
+              mb={2}
+              width="100%"
+              isRequired // Make this field required
+            />
+          </Box>
+          <Box width="100%">
+            <Text fontSize="lg" fontWeight="bold">Company</Text>
+            <Input
+              value={company}
+              onChangeText={setCompany}
+              placeholder="Enter your company"
+              variant="outline"
+              mt={2}
+              mb={2}
+              width="100%"
+              isRequired // Make this field required
+            />
+          </Box>
+          <Box width="100%">
+            <Text fontSize="lg" fontWeight="bold">Position</Text>
+            <Input
+              value={position}
+              onChangeText={setPosition}
+              placeholder="Enter your position"
+              variant="outline"
+              mt={2}
+              mb={2}
+              width="100%"
+              isRequired // Make this field required
+            />
+          </Box>
+          <Box width="100%">
+            <Text fontSize="lg" fontWeight="bold">Password</Text>
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              variant="outline"
+              secureTextEntry
+              mt={2}
+              mb={2}
+              width="100%"
+              isRequired // Make this field required
+            />
+          </Box>
+          <Button onPress={handleRegister} size="sm" colorScheme="blue" mt={1} width="100%">Register</Button>
+          <Text mt={1} fontSize="md">
+            Sudah punya akun?{' '}
+            <Link onPress={() => navigation.navigate('Login')} _text={{ color: "blue.500", textDecoration: "underline" }}>
+              Login
+            </Link>
+          </Text>
+        </VStack>
+      </ScrollView>
+    </Center>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#121212'
-  },
-  label: {
-    fontSize: 18,
-    marginBottom: 8,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 16,
-    paddingHorizontal: 8,
-  },
-});
 
 export default Register;

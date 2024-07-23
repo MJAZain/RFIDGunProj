@@ -8,10 +8,30 @@ const Tab = createMaterialTopTabNavigator();
 
 const HomeTabs = () => {
   return (
-    <Tab.Navigator>
-      <Tab.Screen name="Search Pipe" component={SearchPipeScreen} />
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+    <Tab.Navigator
+      initialRouteName="Home"
+      tabBarOptions={{
+        activeTintColor: 'blue',
+        inactiveTintColor: 'black',
+        style: { backgroundColor: 'white' },
+        indicatorStyle: { backgroundColor: 'blue' },
+      }}
+    >
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ tabBarLabel: 'Home' }}
+      />
+      <Tab.Screen
+        name="SearchPipe"
+        component={SearchPipeScreen}
+        options={{ tabBarLabel: 'Search Pipe' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Profile' }}
+      />
     </Tab.Navigator>
   );
 };

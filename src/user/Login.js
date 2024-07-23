@@ -1,5 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { Dimensions, Image } from 'react-native';
+import { VStack, Box, Text, Input, Button, Link, Center, useToast, HStack } from 'native-base';
 import axios from 'axios';
 import {jwtDecode} from 'jwt-decode';
 import { AuthContext } from './AuthContext';
@@ -8,6 +9,24 @@ const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useContext(AuthContext);
+  const toast = useToast();
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    const updateOrientation = () => {
+      const { width, height } = Dimensions.get('window');
+      setIsLandscape(width > height);
+    };
+
+    const subscription = Dimensions.addEventListener('change', updateOrientation);
+    updateOrientation();
+
+    return () => {
+      if (subscription && subscription.remove) {
+        subscription.remove();
+      }
+    };
+  }, []);
 
   const handleLogin = async () => {
     try {
@@ -28,63 +47,104 @@ const Login = ({ navigation }) => {
       // Navigate to the home screen
       navigation.navigate('HomeTabs'); // Update this to match your navigation structure
     } catch (error) {
-      console.error('Login failed:', error.response ? error.response.data : error.message);
+      const errorMessage = error.response && error.response.data && error.response.data.message
+        ? error.response.data.message
+        : error.message;
+      console.error('Login failed:', errorMessage);
+      toast.show({
+        title: 'Login failed',
+        status: 'error',
+        description: errorMessage,
+        placement: 'top',
+      });
     }
   };
 
+  const imageSource = require('../../public/userImage/Logo_PT_Rekayasa_Industri.jpg');
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholderTextColor="#aaa"
-        placeholder="Enter your email"
-      />
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        placeholderTextColor="#aaa"
-        placeholder="Enter your password"
-      />
-      <View style={styles.buttonContainer}>
-        <Button title="Login" onPress={handleLogin} color="#1E90FF" />
-      </View>
-      <View style={styles.buttonContainer}>
-        <Button title="Register" onPress={() => navigation.navigate('Register')} color="#1E90FF" />
-      </View>
-    </View>
+    <Center flex={1} px="3" bg="#fff">
+      {isLandscape ? (
+        <HStack space={2} width="90%" maxW="800px" alignItems="center">
+          <Image
+            source={imageSource}
+            style={{ width: 150, height: '100%' }}
+            resizeMode="contain"
+          />
+          <VStack space={2} flex={1}>
+            <Box>
+              <Text fontSize="lg" fontWeight="bold">Email</Text>
+              <Input
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Enter your email"
+                variant="outline"
+                mt={2}
+                mb={4}
+              />
+            </Box>
+            <Box>
+              <Text fontSize="lg" fontWeight="bold">Password</Text>
+              <Input
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Enter your password"
+                variant="outline"
+                secureTextEntry
+                mt={2}
+                mb={4}
+              />
+            </Box>
+            <Button onPress={handleLogin} size="sm" colorScheme="blue" mt={4}>Login</Button>
+            <Text mt={4} fontSize="md">
+              Tidak punya akun?{' '}
+              <Link onPress={() => navigation.navigate('Register')} _text={{ color: "blue.500", textDecoration: "underline" }}>
+                Register
+              </Link>
+            </Text>
+          </VStack>
+        </HStack>
+      ) : (
+        <VStack space={4} width="90%" maxW="400px">
+          <Image
+            source={imageSource}
+            style={{ width: '100%', height: 150, marginBottom: 20 }}
+            resizeMode="contain"
+          />
+          <Box>
+            <Text fontSize="lg" fontWeight="bold">Email</Text>
+            <Input
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              variant="outline"
+              mt={2}
+              mb={4}
+            />
+          </Box>
+          <Box>
+            <Text fontSize="lg" fontWeight="bold">Password</Text>
+            <Input
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Enter your password"
+              variant="outline"
+              secureTextEntry
+              mt={2}
+              mb={4}
+            />
+          </Box>
+          <Button onPress={handleLogin} size="sm" colorScheme="blue" mt={4}>Login</Button>
+          <Text mt={4} fontSize="md">
+            Tidak punya akun?{' '}
+            <Link onPress={() => navigation.navigate('Register')} _text={{ color: "blue.500", textDecoration: "underline" }}>
+              Register
+            </Link>
+          </Text>
+        </VStack>
+      )}
+    </Center>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#121212',
-  },
-  label: {
-    fontSize: 18,
-    color: '#fff',
-    marginBottom: 8,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 16,
-    paddingHorizontal: 8,
-    color: '#fff',
-    backgroundColor: '#1f1f1f',
-  },
-  buttonContainer: {
-    marginBottom: 10,
-  },
-});
 
 export default Login;

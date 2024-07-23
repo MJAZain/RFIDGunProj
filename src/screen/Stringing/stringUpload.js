@@ -1,13 +1,15 @@
-import React, { useState, useContext } from 'react';
-import { View, TextInput, Button, Alert, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { Dimensions, TextInput, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Box, Button, useToast, VStack, HStack } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
 
 const StringUpload = ({ route }) => {
   const navigation = useNavigation();
-  const { pipe_id, name } = route.params;
+  const { pipe_id } = route.params;
   const { user } = useContext(AuthContext);
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     id_pipe: pipe_id,
@@ -17,55 +19,112 @@ const StringUpload = ({ route }) => {
     activity_name: '',
     activity_date: '',
     loc_name: '',
-    name: user.name
   });
+
+  const [isLandscape, setIsLandscape] = useState(false);
+
+  useEffect(() => {
+    const handleOrientationChange = ({ window: { width, height } }) => {
+      setIsLandscape(width > height);
+    };
+
+    const subscription = Dimensions.addEventListener('change', handleOrientationChange);
+    handleOrientationChange({ window: Dimensions.get('window') });
+
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
 
   const uploadDataToMySQL = async () => {
     if (!formData.id_pipe.trim()) {
-      Alert.alert('Validation Error', 'Pipe ID cannot be empty');
+      toast.show({
+        title: 'Validation Error',
+        status: 'error',
+        description: 'Pipe ID cannot be empty',
+        placement: 'top',
+      });
       return;
     }
 
     try {
-      const response = await axios.post('http://192.168.102.101:3000/string/add', formData);
+      const response = await axios.post('http://192.168.102.101:3000/string/add', { ...formData, name: user.name }, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
       if (response.status === 200) {
-        Alert.alert('Success', 'Data uploaded to MySQL', [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Home') // Navigate back to the Home screen
-          }
-        ]);
+        toast.show({
+          title: 'Success',
+          status: 'success',
+          description: 'Data uploaded to MySQL',
+          placement: 'top',
+        });
+        navigation.navigate('Home');
       } else {
         throw new Error('Server responded with an error');
       }
     } catch (ex) {
       console.error('Upload Error:', ex);
-      if (ex.response) {
-        console.error('Response data:', ex.response.data);
-        console.error('Response status:', ex.response.status);
-        console.error('Response headers:', ex.response.headers);
-      } else if (ex.request) {
-        console.error('Request data:', ex.request);
-      } else {
-        console.error('Error message:', ex.message);
-      }
-      Alert.alert('Error', `Failed to upload data to MySQL: ${ex.message || 'Unknown error'}`);
+      toast.show({
+        title: 'Error',
+        status: 'error',
+        description: `Failed to upload data to MySQL: ${ex.message || 'Unknown error'}`,
+        placement: 'top',
+      });
     }
   };
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        navigation.navigate('Home');
+        return true;
+      };
+
+      BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => {
+        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+      };
+    }, [navigation])
+  );
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      {Object.keys(formData).filter(key => key !== 'id_pipe').map((key) => (
-        <TextInput
-          key={key}
-          placeholder={key}
-          placeholderTextColor="#888"
-          value={formData[key]}
-          onChangeText={(text) => setFormData({ ...formData, [key]: text })}
-          style={styles.input}
-        />
-      ))}
-      <Button title="Upload Data to MySQL" onPress={uploadDataToMySQL} />
+      {isLandscape ? (
+        <HStack space={4} flexWrap="wrap" justifyContent="center">
+          {Object.keys(formData).map((key) => (
+            <TextInput
+              key={key}
+              placeholder={key.replace('_', ' ')}
+              placeholderTextColor="#888"
+              value={formData[key]}
+              onChangeText={(text) => setFormData({ ...formData, [key]: text })}
+              style={styles.input}
+            />
+          ))}
+          <Button onPress={uploadDataToMySQL} colorScheme="blue" style={styles.button}>
+            Upload Data to MySQL
+          </Button>
+        </HStack>
+      ) : (
+        <VStack space={4}>
+          {Object.keys(formData).map((key) => (
+            <TextInput
+              key={key}
+              placeholder={key.replace('_', ' ')}
+              placeholderTextColor="#888"
+              value={formData[key]}
+              onChangeText={(text) => setFormData({ ...formData, [key]: text })}
+              style={styles.input}
+            />
+          ))}
+          <Button onPress={uploadDataToMySQL} colorScheme="blue">
+            Upload Data to MySQL
+          </Button>
+        </VStack>
+      )}
     </ScrollView>
   );
 };
@@ -73,17 +132,23 @@ const StringUpload = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#fff',
     padding: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#555',
-    color: '#fff',
-    backgroundColor: '#444',
+    borderColor: '#ccc',
+    color: '#000',
+    backgroundColor: '#fff',
     padding: 10,
-    marginBottom: 10,
     borderRadius: 5,
+    marginBottom: 10,
+    flex: 1,
+    minWidth: '40%', // Adjust to fit multiple items in landscape mode
+  },
+  button: {
+    alignSelf: 'center',
+    marginTop: 10,
   },
 });
 

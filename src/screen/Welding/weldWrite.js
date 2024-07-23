@@ -1,108 +1,113 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, Button, Alert, StyleSheet, BackHandler } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
+import { Box, Button, useToast } from 'native-base';
+import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../user/AuthContext';
 
 const WeldWrite = () => {
-  const [nfcTag, setNfcTag] = useState(null);
-  const navigation = useNavigation();
+  const [uid, setUid] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [buttonText, setButtonText] = useState('Start Scanning');
   const { user } = useContext(AuthContext);
+  const navigation = useNavigation();
+  const toast = useToast();
 
   useEffect(() => {
-    console.log('NfcManager starting');
-    NfcManager.start()
-      .then(() => console.log('NfcManager started'))
-      .catch(err => console.error('Error starting NfcManager:', err));
+    const initNfc = async () => {
+      try {
+        await NfcManager.start();
+      } catch (ex) {
+        console.warn('Error starting NFC Manager', ex);
+      }
+    };
+
+    initNfc();
 
     return () => {
-      console.log('NfcManager stopping');
-      NfcManager.stop()
-        .then(() => console.log('NfcManager stopped'))
-        .catch(err => console.error('Error stopping NfcManager:', err));
+      // Ensure NFC technology request is cancelled when the component unmounts
+      NfcManager.cancelTechnologyRequest().catch((error) => {
+        console.warn('Error cancelling NFC technology request on unmount', error);
+      });
     };
   }, []);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      const onBackPress = () => {
-        console.log('Back button pressed');
-        navigation.navigate('Home');
-        return true;
-      };
-
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-      console.log('BackHandler event added');
-
-      return () => {
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-        console.log('BackHandler event removed');
-      };
-    }, [navigation])
-  );
-
-  const checkPipeRegistration = async (tagId) => {
+  const startNfc = async () => {
+    setScanning(true);
+    setButtonText('Scanning...');
     try {
-      console.log('User object:', user);  // Log the user object
-      if (!user || !user.token) {
-        Alert.alert('Error', 'User token is missing');
-        return false;
-      }
-
-      console.log(`Checking pipe registration for tagId: ${tagId}`);
-      const response = await axios.get(`http://192.168.102.101:3000/pipe/${tagId}`, {
-        headers: {
-          Authorization: `Bearer ${user.token}`, // Ensure the token is passed correctly
-        },
+      await NfcManager.start();
+      await NfcManager.requestTechnology(NfcTech.Ndef);
+      const tag = await NfcManager.getTag();
+      setUid(tag.id);
+      await NfcManager.cancelTechnologyRequest();
+      setScanning(false);
+      handlePipeRegistration(tag.id);
+    } catch (ex) {
+      console.warn('Error reading NFC tag', ex);
+      await NfcManager.cancelTechnologyRequest().catch((error) => {
+        console.warn('Error cancelling NFC technology request', error);
       });
-      if (response.data.registered) {
-        console.log('Pipe is registered');
-        return true;
-      } else {
-        Alert.alert('Error', 'Pipe not registered');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error checking pipe registration:', error);
-      Alert.alert('Error', 'Failed to check pipe registration');
-      return false;
+      setScanning(false);
+      toast.show({
+        title: 'Error',
+        status: 'error',
+        description: 'Failed to read NFC tag. Please try again.',
+        placement: 'top',
+      });
+      setButtonText('Start Scanning');
     }
   };
 
-  const readNfc = async () => {
+  const handlePipeRegistration = async (uid) => {
     try {
-      console.log('Requesting NFC technology');
-      await NfcManager.requestTechnology(NfcTech.Ndef);
-      console.log('NFC technology requested');
-
-      const tag = await NfcManager.getTag();
-      console.log('NFC tag read:', tag);
-      setNfcTag(tag);
-
-      const tagId = tag.id;
-      const isRegistered = await checkPipeRegistration(tagId);
-
-      if (isRegistered) {
-        console.log('Navigating to WeldUpload with tagId:', tagId);
-        navigation.navigate('WeldUpload', { pipe_id: tagId, name: user.name });
+      const response = await axios.get(`http://192.168.102.101:3000/pipe/${uid}`, {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      });
+      if (response.data.registered) {
+        setButtonText('Next');
+      } else {
+        toast.show({
+          title: 'Error',
+          status: 'error',
+          description: 'Pipe is not registered',
+          placement: 'top',
+        });
+        setUid(''); // Clear the UID state
+        setButtonText('Scan Again');
       }
+    } catch (error) {
+      console.error('Error checking pipe registration', error);
+      toast.show({
+        title: 'Error',
+        status: 'error',
+        description: 'Failed to check pipe registration',
+        placement: 'top',
+      });
+      setUid(''); // Clear the UID state
+      setButtonText('Start Scanning');
+    }
+  };
 
-      console.log('Cancelling NFC technology request');
-      await NfcManager.cancelTechnologyRequest();
-    } catch (ex) {
-      console.warn('Error in readNfc:', ex);
-      Alert.alert('Error', 'Failed to read NFC tag. Please try again.');
-      console.log('Cancelling NFC technology request after error');
-      await NfcManager.cancelTechnologyRequest();
+  const handleButtonPress = () => {
+    if (buttonText === 'Start Scanning' || buttonText === 'Scan Again') {
+      startNfc();
+    } else if (buttonText === 'Next') {
+      navigation.navigate('WeldUpload', { pipe_id: uid, name: user.name });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>NFC Reader</Text>
-      <Button title="Read NFC Tag" onPress={readNfc} />
-    </View>
+    <Box style={styles.container}>
+      <Text style={styles.label}>Scan Tag</Text>
+      <Text style={styles.uidText}>{uid || 'Fetching UID...'}</Text>
+      <Button onPress={handleButtonPress} colorScheme="blue" isDisabled={scanning}>
+        {buttonText}
+      </Button>
+    </Box>
   );
 };
 
@@ -111,16 +116,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#333',
+    backgroundColor: '#fff',
   },
-  title: {
-    color: '#fff',
-    fontSize: 24,
-    marginBottom: 20,
+  label: {
+    fontSize: 18,
+    color: '#000',
+    marginBottom: 8,
   },
-  text: {
-    color: '#fff',
+  uidText: {
     fontSize: 16,
+    marginBottom: 16,
+    color: '#888',
   },
 });
 

@@ -1,5 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { View, TextInput, Button, FlatList, Text, StyleSheet, Alert } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { Dimensions, StyleSheet, Alert } from 'react-native';
+import { Box, Input, Button, Text, VStack, Collapse, SectionList, HStack, useToast } from 'native-base';
 import axios from 'axios';
 import { AuthContext } from '../user/AuthContext';
 
@@ -9,61 +10,96 @@ const SearchPipeScreen = () => {
   const [jointNo, setJointNo] = useState('');
   const [pjCode, setPjCode] = useState('');
   const [results, setResults] = useState({ pipes: [], fitup: [], welding: [], stringing: [] });
+  const [showSearch, setShowSearch] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
   const { user } = useContext(AuthContext);
+  const toast = useToast();
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const { width, height } = Dimensions.get('window');
+      setIsLandscape(width > height);
+    };
+
+    const subscription = Dimensions.addEventListener('change', handleOrientationChange);
+    handleOrientationChange(); // Check initial orientation
+
+    return () => {
+      if (subscription && subscription.remove) {
+        subscription.remove();
+      }
+    };
+  }, []);
 
   const handleSearch = async () => {
-    if (!user || !user.token) {
-      Alert.alert('Error', 'User is not authenticated');
-      return;
-    }
+    if (showSearch) {
+      // If search bar is visible, execute the search
+      if (!user || !user.token) {
+        Alert.alert('Error', 'User is not authenticated');
+        return;
+      }
 
-    try {
-      const response = await axios.get('http://192.168.102.101:3000/search/pipes', {
-        params: {
-          spool_no: spoolNo,
-          iso_no: isoNo,
-          joint_no: jointNo,
-          pj_code: pjCode,
-        },
-        headers: {
-          Authorization: `Bearer ${user.token}`, // Include the token in the request headers
-        },
-      });
-      setResults(response.data);
-    } catch (error) {
-      console.error('Error fetching pipe data:', error);
-      Alert.alert('Error', `Failed to fetch pipe data: ${error.message}`);
+      try {
+        const response = await axios.get('http://192.168.102.101:3000/search/pipes', {
+          params: {
+            spool_no: spoolNo,
+            iso_no: isoNo,
+            joint_no: jointNo,
+            pj_code: pjCode,
+          },
+          headers: {
+            Authorization: `Bearer ${user.token}`, // Include the token in the request headers
+          },
+        });
+        setResults(response.data);
+        setShowSearch(false); // Hide the search bar after search
+      } catch (error) {
+        console.error('Error fetching pipe data:', error);
+        if (error.response && error.response.status === 404) {
+          toast.show({
+            title: 'Error',
+            status: 'error',
+            description: 'Pipe does not exist!',
+            placement: 'top',
+          });
+        } else {
+          Alert.alert('Error', `Failed to fetch pipe data: ${error.message}`);
+        }
+      }
+    } else {
+      // If search bar is hidden, show it
+      setShowSearch(true);
     }
   };
 
   const renderPipeItem = ({ item }) => (
-    <View style={styles.resultItem}>
+    <Box style={styles.resultItem}>
       <Text>Pipe ID: {item.id_pipe}</Text>
       <Text>Spool No: {item.spool_no}</Text>
       <Text>Isometric No: {item.iso_no}</Text>
       <Text>Joint No: {item.joint_no}</Text>
       <Text>Project Code: {item.pj_code}</Text>
-    </View>
+    </Box>
   );
 
   const renderFitupItem = ({ item }) => (
-    <View style={styles.resultItem}>
+    <Box style={styles.resultItem}>
       <Text>Fitup Date: {item.fitup_date}</Text>
       <Text>Fitup Result: {item.fitup_result}</Text>
       <Text>Heat 1: {item.heat1}</Text>
       <Text>Heat 2: {item.heat2}</Text>
       <Text>Name: {item.name}</Text>
-      <Text>Pipe ID: {item.id_pipe}</Text>
-    </View>
+    </Box>
   );
 
   const renderWeldingItem = ({ item }) => (
-    <View style={styles.resultItem}>
+    <Box style={styles.resultItem}>
+      <Text>Welding Date: {item.welding_date}</Text>
       <Text>Root 1: {item.root1}</Text>
       <Text>Root 2: {item.root2}</Text>
       <Text>Root 3: {item.root3}</Text>
       <Text>Root 4: {item.root4}</Text>
-      <Text>Welding Column: {item.welsingcol}</Text>
+      <Text>Welding Column: {item.weldingcol}</Text>
       <Text>Root WP: {item.root_wp}</Text>
       <Text>Root Batch No: {item.root_batchno}</Text>
       <Text>Filler 1: {item.filler1}</Text>
@@ -80,12 +116,12 @@ const SearchPipeScreen = () => {
       <Text>Cover Batch No: {item.cover_batchno}</Text>
       <Text>WPS ID: {item.wps_id}</Text>
       <Text>Name: {item.name}</Text>
-      <Text>Pipe ID: {item.id_pipe}</Text>
-    </View>
+    </Box>
   );
 
   const renderStringingItem = ({ item }) => (
-    <View style={styles.resultItem}>
+    <Box style={styles.resultItem}>
+      <Text>Stringing Date: {item.stringing_date}</Text>
       <Text>PWCBS: {item.PWCBS}</Text>
       <Text>Location ID: {item.id_location}</Text>
       <Text>Status: {item.status_location}</Text>
@@ -93,88 +129,125 @@ const SearchPipeScreen = () => {
       <Text>Activity Date: {item.activity_date}</Text>
       <Text>Location Name: {item.loc_name}</Text>
       <Text>Name: {item.name}</Text>
-      <Text>Pipe ID: {item.id_pipe}</Text>
-    </View>
+    </Box>
   );
 
+  const sections = [
+    { title: 'Pipes', data: results.pipes, renderItem: renderPipeItem },
+    { title: 'Fitup Results', data: results.fitup, renderItem: renderFitupItem },
+    { title: 'Welding Results', data: results.welding, renderItem: renderWeldingItem },
+    { title: 'Stringing Results', data: results.stringing, renderItem: renderStringingItem },
+  ];
+
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Spool No"
-        value={spoolNo}
-        onChangeText={setSpoolNo}
+    <Box flex={1} bg="white" p={4}>
+      <Button onPress={handleSearch} mb={4}>
+        Search
+      </Button>
+      <Collapse isOpen={showSearch}>
+        {isLandscape ? (
+          <HStack space={3} mb={4}>
+            <Input
+              placeholder="Spool No"
+              value={spoolNo}
+              onChangeText={setSpoolNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+              flex={1}
+            />
+            <Input
+              placeholder="Isometric No"
+              value={isoNo}
+              onChangeText={setIsoNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+              flex={1}
+            />
+            <Input
+              placeholder="Joint No"
+              value={jointNo}
+              onChangeText={setJointNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+              flex={1}
+            />
+            <Input
+              placeholder="Project Code"
+              value={pjCode}
+              onChangeText={setPjCode}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+              flex={1}
+            />
+          </HStack>
+        ) : (
+          <VStack space={3} mb={4}>
+            <Input
+              placeholder="Spool No"
+              value={spoolNo}
+              onChangeText={setSpoolNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+            />
+            <Input
+              placeholder="Isometric No"
+              value={isoNo}
+              onChangeText={setIsoNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+            />
+            <Input
+              placeholder="Joint No"
+              value={jointNo}
+              onChangeText={setJointNo}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+            />
+            <Input
+              placeholder="Project Code"
+              value={pjCode}
+              onChangeText={setPjCode}
+              bg="gray.200"
+              borderRadius="5"
+              placeholderTextColor="gray.500"
+            />
+          </VStack>
+        )}
+      </Collapse>
+      <SectionList
+        sections={sections}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item, section }) => section.renderItem({ item })}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionTitle}>{title}</Text>
+        )}
+        contentContainerStyle={styles.sectionList}
       />
-      <TextInput
-        style={styles.input}
-        placeholder="Isometric No"
-        value={isoNo}
-        onChangeText={setIsoNo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Joint No"
-        value={jointNo}
-        onChangeText={setJointNo}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Project Code"
-        value={pjCode}
-        onChangeText={setPjCode}
-      />
-      <Button title="Search" onPress={handleSearch} />
-      <FlatList
-        data={results.pipes}
-        keyExtractor={(item) => item.id_pipe.toString()}
-        renderItem={renderPipeItem}
-        style={styles.resultsList}
-      />
-      <Text>Fitup Results:</Text>
-      <FlatList
-        data={results.fitup}
-        keyExtractor={(item) => item.id_pipe.toString()}
-        renderItem={renderFitupItem}
-        style={styles.resultsList}
-      />
-      <Text>Welding Results:</Text>
-      <FlatList
-        data={results.welding}
-        keyExtractor={(item) => item.id_pipe.toString()}
-        renderItem={renderWeldingItem}
-        style={styles.resultsList}
-      />
-      <Text>Stringing Results:</Text>
-      <FlatList
-        data={results.stringing}
-        keyExtractor={(item) => item.id_pipe.toString()}
-        renderItem={renderStringingItem}
-        style={styles.resultsList}
-      />
-    </View>
+    </Box>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#333',
-    padding: 16,
-  },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  resultsList: {
-    marginTop: 16,
-  },
   resultItem: {
     padding: 16,
     borderBottomColor: 'gray',
     borderBottomWidth: 1,
+  },
+  sectionTitle: {
+    color: '#000',
+    fontSize: 18,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  sectionList: {
+    paddingBottom: 20,
   },
 });
 

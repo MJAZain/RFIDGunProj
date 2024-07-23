@@ -1,79 +1,45 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, Button, StyleSheet, Alert, BackHandler } from 'react-native';
+import React, { useState, useContext } from 'react';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import axios from 'axios';
-import { useFocusEffect } from '@react-navigation/native';
+import { useToast, Box, Center } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
 
 const PipeWriting = ({ navigation }) => {
   const [uid, setUid] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [buttonText, setButtonText] = useState('Start Scanning');
   const { user } = useContext(AuthContext);
+  const toast = useToast();
 
-  useEffect(() => {
-    const initNfc = async () => {
-      console.log('Initializing NFC Manager');
-      try {
-        await NfcManager.start();
-        console.log('NFC Manager started');
-      } catch (ex) {
-        console.warn('Error starting NFC Manager', ex);
-      }
-    };
+  const startNfc = async () => {
+    setScanning(true);
+    setButtonText('Scanning...');
+    try {
+      await NfcManager.start();
+      await NfcManager.requestTechnology(NfcTech.NfcA);
+      const tag = await NfcManager.getTag();
+      setUid(tag.id);
+      await NfcManager.cancelTechnologyRequest();
+      setScanning(false);
+      handlePipeRegistration(tag.id);
+    } catch (ex) {
+      console.warn('Error reading NFC tag', ex);
+      await NfcManager.cancelTechnologyRequest().catch((error) => {
+        console.warn('Error cancelling NFC technology request', error);
+      });
+      setScanning(false);
+      toast.show({
+        title: "Error",
+        status: "error",
+        description: "Failed to read NFC tag. Please try again.",
+        placement: "top"
+      });
+      setButtonText('Start Scanning');
+    }
+  };
 
-    initNfc();
-
-    return () => {
-      console.log('Cleaning up NFC event listeners in useEffect');
-      NfcManager.setEventListener(NfcTech.NfcA, null);
-    };
-  }, []);
-
-  useFocusEffect(
-    React.useCallback(() => {
-      let isActive = true;
-
-      const readNfc = async () => {
-        console.log('Requesting NFC technology');
-        try {
-          await NfcManager.requestTechnology(NfcTech.NfcA);
-          console.log('NFC technology requested');
-          const tag = await NfcManager.getTag();
-          console.log('NFC tag read', tag);
-          if (isActive) {
-            setUid(tag.id);
-          }
-        } catch (ex) {
-          console.warn('Error reading NFC tag', ex);
-        } finally {
-          console.log('Cancelling NFC technology request');
-          await NfcManager.cancelTechnologyRequest();
-        }
-      };
-
-      const onBackPress = () => {
-        console.log('Back button pressed, cleaning up and navigating home');
-        isActive = false;
-        NfcManager.setEventListener(NfcTech.NfcA, null);
-        navigation.navigate('Home');
-        return true;
-      };
-
-      console.log('Reading NFC tag');
-      readNfc();
-
-      BackHandler.addEventListener('hardwareBackPress', onBackPress);
-
-      return () => {
-        console.log('Cleaning up NFC event listeners and back handler in useFocusEffect');
-        isActive = false;
-        BackHandler.removeEventListener('hardwareBackPress', onBackPress);
-        NfcManager.setEventListener(NfcTech.NfcA, null);
-      };
-    }, [navigation])
-  );
-
-  const checkPipeRegistration = async (uid) => {
-    console.log('Checking pipe registration for UID:', uid);
+  const handlePipeRegistration = async (uid) => {
     try {
       const response = await axios.get(`http://192.168.102.101:3000/pipe/${uid}`, {
         headers: {
@@ -81,64 +47,62 @@ const PipeWriting = ({ navigation }) => {
         },
       });
       if (response.data.registered) {
-        console.log('Pipe is already registered');
-        Alert.alert('Error', 'Pipe is already registered');
-        return false;
+        toast.show({
+          title: "Error",
+          status: "error",
+          description: "Pipe is already registered",
+          placement: "top"
+        });
+        setButtonText('Scan Again');
       } else {
-        console.log('Pipe is not registered');
-        return true;
+        setButtonText('Next');
       }
     } catch (error) {
       console.error('Error checking pipe registration', error);
-      Alert.alert('Error', 'Failed to check pipe registration');
-      return false;
+      toast.show({
+        title: "Error",
+        status: "error",
+        description: "Failed to check pipe registration",
+        placement: "top"
+      });
+      setButtonText('Start Scanning');
     }
   };
 
-  const handleNext = async () => {
-    console.log('Handling next button press');
-    if (uid) {
-      console.log('UID found:', uid);
-      const isNotRegistered = await checkPipeRegistration(uid);
-      if (isNotRegistered) {
-        console.log('Navigating to PipeUpload');
-        navigation.navigate('PipeUpload', { uid });
-      }
-    } else {
-      console.log('UID not found, showing alert');
-      Alert.alert('Error', 'UID not found. Please try again.');
+  const handleButtonPress = () => {
+    if (buttonText === 'Start Scanning' || buttonText === 'Scan Again') {
+      startNfc();
+    } else if (buttonText === 'Next') {
+      navigation.navigate('PipeUpload', { uid });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Scan Tag</Text>
-      <Text style={styles.uidText}>{uid || 'Fetching UID...'}</Text>
-      <Button title="Next" onPress={handleNext} disabled={!uid} />
-    </View>
+    <Center flex={1} px="3">
+      <Box alignItems="center">
+        <Text style={styles.label}>Scan Tag</Text>
+        <Text style={styles.uidText}>{uid || 'Fetching UID...'}</Text>
+        <Button
+          title={buttonText}
+          onPress={handleButtonPress}
+          disabled={scanning}
+          color="#1E90FF"
+        />
+      </Box>
+    </Center>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
   label: {
     fontSize: 18,
-    color: '#fff',
+    color: '#000',
     marginBottom: 8,
   },
   uidText: {
     fontSize: 16,
     marginBottom: 16,
     color: '#888',
-  },
-  button: {
-    backgroundColor: '#1E90FF',
-    color: '#fff',
   },
 });
 
