@@ -4,6 +4,8 @@ import { VStack, Box, Text, Input, Button, Link, Center, useToast, HStack } from
 import axios from 'axios';
 import {jwtDecode} from 'jwt-decode';
 import { AuthContext } from './AuthContext';
+import { API_URL } from '@env';
+
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -31,7 +33,7 @@ const Login = ({ navigation }) => {
   const handleLogin = async () => {
     try {
       console.log('Starting login process');
-      const response = await axios.post('http://192.168.102.101:3000/auth/login', { email, password });
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
       console.log('Received response:', response.data);
 
       const { token } = response.data;

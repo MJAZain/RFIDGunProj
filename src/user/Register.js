@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image } from 'react-native';
 import { VStack, Box, Text, Input, Button, Link, Center, ScrollView, useToast } from 'native-base';
 import axios from 'axios';
+import { API_URL } from '@env';
 
 const Register = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -23,7 +24,7 @@ const Register = ({ navigation }) => {
     }
 
     try {
-      await axios.post('http://192.168.102.101:3000/auth/register', {
+      const response = await axios.post(`${API_URL}/auth/register`, {
         name,
         email,
         company,

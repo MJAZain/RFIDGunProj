@@ -4,6 +4,7 @@ import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import axios from 'axios';
 import { useToast, Box, Center } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
+import { API_URL } from '@env';
 
 const PipeWriting = ({ navigation }) => {
   const [uid, setUid] = useState('');
@@ -41,7 +42,7 @@ const PipeWriting = ({ navigation }) => {
 
   const handlePipeRegistration = async (uid) => {
     try {
-      const response = await axios.get(`http://192.168.102.101:3000/pipe/${uid}`, {
+      const response = await axios.get(`${API_URL}/pipe/${uid}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

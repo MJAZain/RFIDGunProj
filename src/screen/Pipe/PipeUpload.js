@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
+import { API_URL } from '@env';
 
 const PipeUpload = ({ route }) => {
   const { uid } = route.params;
@@ -34,7 +35,7 @@ const PipeUpload = ({ route }) => {
 
   const handleSubmit = async () => {
     try {
-      await axios.post('http://192.168.102.101:3000/pipe/add', {
+      await axios.post(`${API_URL}/pipe/add`, {
         id_pipe: uid,
         spool_no: spoolNo,
         iso_no: isoNo,

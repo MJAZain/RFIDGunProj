@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack, Text } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
+import { API_URL } from '@env';
 
 const WeldUpload = () => {
   const { user } = useContext(AuthContext);
@@ -59,7 +60,7 @@ const WeldUpload = () => {
   const handleSubmit = async () => {
     const data = { ...formData, name: user.name, id_pipe: pipe_id };
     try {
-      const response = await axios.post('http://192.168.102.101:3000/welding/add', data, {
+      const response = await axios.post(`${API_URL}/welding/add`, data, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

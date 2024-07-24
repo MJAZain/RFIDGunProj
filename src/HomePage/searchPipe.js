@@ -3,6 +3,7 @@ import { Dimensions, StyleSheet, Alert } from 'react-native';
 import { Box, Input, Button, Text, VStack, Collapse, SectionList, HStack, useToast } from 'native-base';
 import axios from 'axios';
 import { AuthContext } from '../user/AuthContext';
+import { API_URL } from '@env';
 
 const SearchPipeScreen = () => {
   const [spoolNo, setSpoolNo] = useState('');
@@ -40,7 +41,7 @@ const SearchPipeScreen = () => {
       }
 
       try {
-        const response = await axios.get('http://192.168.102.101:3000/search/pipes', {
+        const response = await axios.get(`${API_URL}/search/pipes`, {
           params: {
             spool_no: spoolNo,
             iso_no: isoNo,

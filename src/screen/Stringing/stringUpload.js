@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
+import { API_URL } from '@env';
 
 const StringUpload = ({ route }) => {
   const navigation = useNavigation();
@@ -48,7 +49,7 @@ const StringUpload = ({ route }) => {
     }
 
     try {
-      const response = await axios.post('http://192.168.102.101:3000/string/add', { ...formData, name: user.name }, {
+      const response = await axios.post(`${API_URL}/string/add`, { ...formData, name: user.name }, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
