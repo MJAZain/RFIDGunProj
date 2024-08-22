@@ -43,7 +43,7 @@ const PipeUpload = ({ route }) => {
         pj_code: pjCode,
       }, {
         headers: {
-          Authorization: `Bearer ${user.token}` // Include the token in the request headers
+          Authorization: `Bearer ${user.token}`
         }
       });
       toast.show({

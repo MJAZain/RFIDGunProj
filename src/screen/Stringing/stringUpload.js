@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
     flex: 1,
-    minWidth: '40%', // Adjust to fit multiple items in landscape mode
+    minWidth: '40%',
   },
   button: {
     alignSelf: 'center',

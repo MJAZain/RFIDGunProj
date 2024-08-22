@@ -14,7 +14,7 @@ const HomeScreen = ({ navigation }) => {
     };
 
     const subscription = Dimensions.addEventListener('change', handleOrientationChange);
-    handleOrientationChange(); // Check initial orientation
+    handleOrientationChange();
 
     return () => {
       if (subscription && subscription.remove) {

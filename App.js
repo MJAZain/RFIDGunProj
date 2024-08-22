@@ -9,9 +9,7 @@ import StringWrite from './src/screen/Stringing/stringWrite';
 import WeldWrite from './src/screen/Welding/weldWrite';
 import WeldUpload from './src/screen/Welding/weldUpload';
 import FitupWrite from './src/screen/Fitup/fitupWrite';
-import FitupRead from './src/screen/fitupRead';
 import FitupUpload from './src/screen/Fitup/fitupUpload';
-import Display from './src/utils/Display';
 import Login from './src/user/Login';
 import Register from './src/user/Register';
 import PipeWriting from './src/screen/Pipe/PipeWriting';
@@ -36,9 +34,7 @@ const App = () => {
             <Stack.Screen name="PipeWriting" component={PipeWriting} options={{ headerLeft: null }} />
             <Stack.Screen name="PipeUpload" component={PipeUpload} options={{ headerLeft: null }} />
             <Stack.Screen name="FitupWrite" component={FitupWrite} options={{ headerLeft: null }} />
-            <Stack.Screen name="Read" component={FitupRead} options={{ headerLeft: null }} />
             <Stack.Screen name="FitupUpload" component={FitupUpload} options={{ headerLeft: null }} />
-            <Stack.Screen name="Display" component={Display} options={{ headerLeft: null }} />
           </Stack.Navigator>
         </NavigationContainer>
       </AuthProvider>

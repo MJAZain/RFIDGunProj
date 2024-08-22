@@ -46,8 +46,7 @@ const Login = ({ navigation }) => {
       await login(userInfo);
       console.log('User info stored in context');
 
-      // Navigate to the home screen
-      navigation.navigate('HomeTabs'); // Update this to match your navigation structure
+      navigation.navigate('HomeTabs');
     } catch (error) {
       const errorMessage = error.response && error.response.data && error.response.data.message
         ? error.response.data.message

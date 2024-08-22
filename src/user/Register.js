@@ -68,7 +68,7 @@ const Register = ({ navigation }) => {
               mt={2}
               mb={2}
               width="100%"
-              isRequired // Make this field required
+              isRequired
             />
           </Box>
           <Box width="100%">
@@ -81,7 +81,7 @@ const Register = ({ navigation }) => {
               mt={2}
               mb={2}
               width="100%"
-              isRequired // Make this field required
+              isRequired
             />
           </Box>
           <Box width="100%">
@@ -94,7 +94,7 @@ const Register = ({ navigation }) => {
               mt={2}
               mb={2}
               width="100%"
-              isRequired // Make this field required
+              isRequired
             />
           </Box>
           <Box width="100%">
@@ -107,7 +107,7 @@ const Register = ({ navigation }) => {
               mt={2}
               mb={2}
               width="100%"
-              isRequired // Make this field required
+              isRequired
             />
           </Box>
           <Box width="100%">
@@ -121,7 +121,7 @@ const Register = ({ navigation }) => {
               mt={2}
               mb={2}
               width="100%"
-              isRequired // Make this field required
+              isRequired
             />
           </Box>
           <Button onPress={handleRegister} size="sm" colorScheme="blue" mt={1} width="100%">Register</Button>
