@@ -14,7 +14,9 @@ import Login from './src/user/Login';
 import Register from './src/user/Register';
 import PipeWriting from './src/screen/Pipe/PipeWriting';
 import PipeUpload from './src/screen/Pipe/PipeUpload';
+import SetServerUrl from './src/user/UrlInputScreen';
 import { AuthProvider } from './src/user/AuthContext';
+import { UrlProvider } from './src/user/UrlContext';
 
 const Stack = createStackNavigator();
 
@@ -22,21 +24,24 @@ const App = () => {
   return (
     <NativeBaseProvider>
       <AuthProvider>
-        <NavigationContainer>
-          <Stack.Navigator initialRouteName="Login">
-            <Stack.Screen name="Login" component={Login} options={{ headerLeft: null }} />
-            <Stack.Screen name="Register" component={Register} options={{ headerLeft: null }} />
-            <Stack.Screen name="HomeTabs" component={HomeTabs} />
-            <Stack.Screen name="StringUpload" component={StringUpload} options={{ headerLeft: null }} />
-            <Stack.Screen name="StringWrite" component={StringWrite} options={{ headerLeft: null }} />
-            <Stack.Screen name="WeldWrite" component={WeldWrite} options={{ headerLeft: null }} />
-            <Stack.Screen name="WeldUpload" component={WeldUpload} options={{ headerLeft: null }} />
-            <Stack.Screen name="PipeWriting" component={PipeWriting} options={{ headerLeft: null }} />
-            <Stack.Screen name="PipeUpload" component={PipeUpload} options={{ headerLeft: null }} />
-            <Stack.Screen name="FitupWrite" component={FitupWrite} options={{ headerLeft: null }} />
-            <Stack.Screen name="FitupUpload" component={FitupUpload} options={{ headerLeft: null }} />
-          </Stack.Navigator>
-        </NavigationContainer>
+        <UrlProvider>
+          <NavigationContainer>
+            <Stack.Navigator initialRouteName="Url">
+              <Stack.Screen name="Url" component={SetServerUrl} options={{ headerLeft: null }} />
+              <Stack.Screen name="Login" component={Login} options={{ headerLeft: null }} />
+              <Stack.Screen name="Register" component={Register} options={{ headerLeft: null }} />
+              <Stack.Screen name="HomeTabs" component={HomeTabs} options={{ headerLeft: null }} />
+              <Stack.Screen name="StringUpload" component={StringUpload} options={{ headerLeft: null }} />
+              <Stack.Screen name="StringWrite" component={StringWrite} options={{ headerLeft: null }} />
+              <Stack.Screen name="WeldWrite" component={WeldWrite} options={{ headerLeft: null }} />
+              <Stack.Screen name="WeldUpload" component={WeldUpload} options={{ headerLeft: null }} />
+              <Stack.Screen name="PipeWriting" component={PipeWriting} options={{ headerLeft: null }} />
+              <Stack.Screen name="PipeUpload" component={PipeUpload} options={{ headerLeft: null }} />
+              <Stack.Screen name="FitupWrite" component={FitupWrite} options={{ headerLeft: null }} />
+              <Stack.Screen name="FitupUpload" component={FitupUpload} options={{ headerLeft: null }} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </UrlProvider>
       </AuthProvider>
     </NativeBaseProvider>
   );

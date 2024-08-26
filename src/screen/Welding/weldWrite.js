@@ -5,13 +5,14 @@ import axios from 'axios';
 import { Box, Button, useToast } from 'native-base';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import the context
 
 const WeldWrite = () => {
   const [uid, setUid] = useState('');
   const [scanning, setScanning] = useState(false);
   const [buttonText, setButtonText] = useState('Start Scanning');
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useContext(UrlContext); // Get server URL from context
   const navigation = useNavigation();
   const toast = useToast();
 
@@ -38,7 +39,6 @@ const WeldWrite = () => {
     setScanning(true);
     setButtonText('Scanning...');
     try {
-      await NfcManager.start();
       await NfcManager.requestTechnology(NfcTech.Ndef);
       const tag = await NfcManager.getTag();
       setUid(tag.id);
@@ -63,7 +63,11 @@ const WeldWrite = () => {
 
   const handlePipeRegistration = async (uid) => {
     try {
-      const response = await axios.get(`${API_URL}/pipe/${uid}`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+      
+      const response = await axios.get(`${serverUrl}/pipe/${uid}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

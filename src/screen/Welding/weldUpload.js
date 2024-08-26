@@ -4,10 +4,11 @@ import axios from 'axios';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack, Text } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import the context
 
 const WeldUpload = () => {
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useContext(UrlContext); // Get server URL from context
   const route = useRoute();
   const navigation = useNavigation();
   const { pipe_id } = route.params;
@@ -60,7 +61,11 @@ const WeldUpload = () => {
   const handleSubmit = async () => {
     const data = { ...formData, name: user.name, id_pipe: pipe_id };
     try {
-      const response = await axios.post(`${API_URL}/welding/add`, data, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+      
+      const response = await axios.post(`${serverUrl}/welding/add`, data, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

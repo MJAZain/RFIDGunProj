@@ -4,11 +4,12 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import the context
 
 const PipeUpload = ({ route }) => {
   const { uid } = route.params;
   const { user } = useContext(AuthContext); // Get the user context
+  const { serverUrl } = useContext(UrlContext); // Get the server URL from context
   const navigation = useNavigation();
   const toast = useToast();
 
@@ -16,7 +17,6 @@ const PipeUpload = ({ route }) => {
   const [isoNo, setIsoNo] = useState('');
   const [jointNo, setJointNo] = useState('');
   const [pjCode, setPjCode] = useState('');
-
   const [isLandscape, setIsLandscape] = useState(false);
 
   useEffect(() => {
@@ -34,8 +34,22 @@ const PipeUpload = ({ route }) => {
   }, []);
 
   const handleSubmit = async () => {
+    if (!spoolNo || !isoNo || !jointNo || !pjCode) {
+      toast.show({
+        title: 'Validation Error',
+        status: 'error',
+        description: 'Please fill in all fields',
+        placement: 'top',
+      });
+      return;
+    }
+
     try {
-      await axios.post(`${API_URL}/pipe/add`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      await axios.post(`${serverUrl}/pipe/add`, {
         id_pipe: uid,
         spool_no: spoolNo,
         iso_no: isoNo,
@@ -46,12 +60,14 @@ const PipeUpload = ({ route }) => {
           Authorization: `Bearer ${user.token}`
         }
       });
+
       toast.show({
         title: 'Success',
         status: 'success',
         description: 'Pipe data submitted successfully',
         placement: 'top',
       });
+
       navigation.navigate('Home');
     } catch (error) {
       toast.show({
@@ -64,7 +80,6 @@ const PipeUpload = ({ route }) => {
     }
   };
 
-  // Handling the back button
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {

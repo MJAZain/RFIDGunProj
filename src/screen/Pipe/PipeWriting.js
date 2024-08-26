@@ -1,23 +1,32 @@
-import React, { useState, useContext } from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import axios from 'axios';
 import { useToast, Box, Center } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import the context
 
 const PipeWriting = ({ navigation }) => {
   const [uid, setUid] = useState('');
   const [scanning, setScanning] = useState(false);
   const [buttonText, setButtonText] = useState('Start Scanning');
+  const { serverUrl } = useContext(UrlContext); // Get server URL from context
   const { user } = useContext(AuthContext);
   const toast = useToast();
+
+  useEffect(() => {
+    // Ensure that NFC Manager is initialized
+    NfcManager.start();
+    return () => {
+      NfcManager.stop();
+      NfcManager.setEventListener('stateChange', 'onStateChange', () => {});
+    };
+  }, []);
 
   const startNfc = async () => {
     setScanning(true);
     setButtonText('Scanning...');
     try {
-      await NfcManager.start();
       await NfcManager.requestTechnology(NfcTech.NfcA);
       const tag = await NfcManager.getTag();
       setUid(tag.id);
@@ -42,7 +51,11 @@ const PipeWriting = ({ navigation }) => {
 
   const handlePipeRegistration = async (uid) => {
     try {
-      const response = await axios.get(`${API_URL}/pipe/${uid}`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      const response = await axios.get(`${serverUrl}/pipe/${uid}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

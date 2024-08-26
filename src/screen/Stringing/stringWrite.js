@@ -1,17 +1,18 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import axios from 'axios';
 import { Box, Button, useToast } from 'native-base';
 import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import the context
 
 const StringWrite = () => {
   const [uid, setUid] = useState('');
   const [scanning, setScanning] = useState(false);
   const [buttonText, setButtonText] = useState('Start Scanning');
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useContext(UrlContext); // Get server URL from context
   const navigation = useNavigation();
   const toast = useToast();
 
@@ -62,7 +63,11 @@ const StringWrite = () => {
 
   const handlePipeRegistration = async (uid) => {
     try {
-      const response = await axios.get(`${API_URL}/pipe/${uid}`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      const response = await axios.get(`${serverUrl}/pipe/${uid}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

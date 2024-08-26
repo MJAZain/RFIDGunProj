@@ -1,9 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { Dimensions, StyleSheet, Alert } from 'react-native';
-import { Box, Input, Button, Text, VStack, Collapse, SectionList, HStack, useToast } from 'native-base';
+import { Box, Input, Button, Text, VStack, Collapse, HStack, SectionList, useToast } from 'native-base';
 import axios from 'axios';
 import { AuthContext } from '../user/AuthContext';
-import { API_URL } from '@env';
+import { useUrl } from '../user/UrlContext'; // Import useUrl hook
 
 const SearchPipeScreen = () => {
   const [spoolNo, setSpoolNo] = useState('');
@@ -14,6 +14,7 @@ const SearchPipeScreen = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useUrl(); // Use URL context
   const toast = useToast();
 
   useEffect(() => {
@@ -40,8 +41,13 @@ const SearchPipeScreen = () => {
         return;
       }
 
+      if (!serverUrl) {
+        Alert.alert('Error', 'Server URL is not set');
+        return;
+      }
+
       try {
-        const response = await axios.get(`${API_URL}/search/pipes`, {
+        const response = await axios.get(`${serverUrl}/search/pipes`, {
           params: {
             spool_no: spoolNo,
             iso_no: isoNo,
@@ -49,11 +55,11 @@ const SearchPipeScreen = () => {
             pj_code: pjCode,
           },
           headers: {
-            Authorization: `Bearer ${user.token}`, // Include the token in the request headers
+            Authorization: `Bearer ${user.token}`,
           },
         });
         setResults(response.data);
-        setShowSearch(false); // Hide the search bar after search
+        setShowSearch(false);
       } catch (error) {
         console.error('Error fetching pipe data:', error);
         if (error.response && error.response.status === 404) {
@@ -68,7 +74,6 @@ const SearchPipeScreen = () => {
         }
       }
     } else {
-      // If search bar is hidden, show it
       setShowSearch(true);
     }
   };

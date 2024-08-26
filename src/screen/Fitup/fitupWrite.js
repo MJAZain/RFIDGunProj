@@ -4,13 +4,14 @@ import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import axios from 'axios';
 import { Box, Button, useToast } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import UrlContext
 
 const FitupWrite = ({ navigation }) => {
   const [uid, setUid] = useState('');
   const [scanning, setScanning] = useState(false);
   const [buttonText, setButtonText] = useState('Start Scanning');
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useContext(UrlContext); // Use UrlContext for server URL
   const [isLandscape, setIsLandscape] = useState(false);
   const toast = useToast();
 
@@ -65,7 +66,11 @@ const FitupWrite = ({ navigation }) => {
 
   const handlePipeRegistration = async (uid) => {
     try {
-      const response = await axios.get(`${API_URL}/pipe/${uid}`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      const response = await axios.get(`${serverUrl}/pipe/${uid}`, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

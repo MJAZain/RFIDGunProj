@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Image } from 'react-native';
-import { VStack, Box, Text, Input, Button, Link, Center, ScrollView, useToast } from 'native-base';
+import React, { useState, useEffect } from 'react';
+import { Image, ScrollView } from 'react-native';
+import { VStack, Box, Text, Input, Button, Link, Center, useToast } from 'native-base';
 import axios from 'axios';
-import { API_URL } from '@env';
+import { useUrl } from './UrlContext'; // Import useUrl hook
 
 const Register = ({ navigation }) => {
   const [name, setName] = useState('');
@@ -11,6 +11,7 @@ const Register = ({ navigation }) => {
   const [position, setPosition] = useState('');
   const [password, setPassword] = useState('');
   const toast = useToast();
+  const { serverUrl } = useUrl(); // Use URL context
 
   const handleRegister = async () => {
     if (!name || !email || !company || !position || !password) {
@@ -24,7 +25,11 @@ const Register = ({ navigation }) => {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      const response = await axios.post(`${serverUrl}/auth/register`, {
         name,
         email,
         company,
@@ -42,7 +47,7 @@ const Register = ({ navigation }) => {
         title: 'Registration failed',
         status: 'error',
         description: errorMessage,
-        placement: 'top', // Add this line to place the toast at the top
+        placement: 'top',
       });
     }
   };

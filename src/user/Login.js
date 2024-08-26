@@ -2,15 +2,15 @@ import React, { useState, useContext, useEffect } from 'react';
 import { Dimensions, Image } from 'react-native';
 import { VStack, Box, Text, Input, Button, Link, Center, useToast, HStack } from 'native-base';
 import axios from 'axios';
-import {jwtDecode} from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 import { AuthContext } from './AuthContext';
-import { API_URL } from '@env';
-
+import { useUrl } from './UrlContext'; // Import useUrl hook
 
 const Login = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useContext(AuthContext);
+  const { serverUrl } = useUrl(); // Use URL context
   const toast = useToast();
   const [isLandscape, setIsLandscape] = useState(false);
 
@@ -32,8 +32,12 @@ const Login = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+      
       console.log('Starting login process');
-      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      const response = await axios.post(`${serverUrl}/auth/login`, { email, password });
       console.log('Received response:', response.data);
 
       const { token } = response.data;

@@ -4,12 +4,13 @@ import axios from 'axios';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Box, Button, useToast, VStack, HStack } from 'native-base';
 import { AuthContext } from '../../user/AuthContext';
-import { API_URL } from '@env';
+import { UrlContext } from '../../user/UrlContext'; // Import UrlContext
 
 const FitupUpload = ({ route }) => {
   const navigation = useNavigation();
   const { pipe_id } = route.params;
   const { user } = useContext(AuthContext);
+  const { serverUrl } = useContext(UrlContext); // Use UrlContext for server URL
   const toast = useToast();
 
   const [formData, setFormData] = useState({
@@ -46,7 +47,11 @@ const FitupUpload = ({ route }) => {
     }
 
     try {
-      const response = await axios.post(`${API_URL}/fitup/add`, { ...formData, name: user.name }, {
+      if (!serverUrl) {
+        throw new Error('Server URL not set');
+      }
+
+      const response = await axios.post(`${serverUrl}/fitup/add`, { ...formData, name: user.name }, {
         headers: {
           Authorization: `Bearer ${user.token}`,
         },
